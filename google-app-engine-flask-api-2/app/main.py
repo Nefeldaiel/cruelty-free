@@ -1,8 +1,9 @@
-from flask import Flask
+from flask import Flask, request
 # import requests
 from lxml import html
 import urllib2
 import logging
+import ujson
 
 
 app = Flask(__name__)
@@ -16,16 +17,22 @@ def get_leaping_bunny():
     divs = tree.xpath('//div[@id="lb-brands"]/div[2]/div[*]/div/div[*]/div/div[2]/span/a')
     return [div.text_content() for div in divs]
 
-# @app.route('/')
-# def hello():
-# 	return 'Hello World!'
-
+@app.route('/')
+def hello():
+    json = '{ "message" : "Hello World!" }'
+    callback = request.args.get('callback')
+    return '{0}({1})'.format(callback, json)
 
 @app.route('/bunnyget')
 def getBunny():
-    list = get_leaping_bunny()
-    str = ''.join(list).encode('utf-8').strip()
-    return str
+    brand_list = get_leaping_bunny()
+    brand_list_str = '<br>'.join(brand_list).encode('utf-8').strip()
+    asDict = {'message': brand_list_str}
+    json = ujson.dumps(asDict)
+    callback = request.args.get('callback')
+    return '{0}({1})'.format(callback, json)
+    # return json
+
     # try:
     #     ret = get_leaping_bunny()
     # except:
