@@ -3,7 +3,7 @@ Brand List:
 <div id="div1">Loading...</div>
 </html>
 <script>
-var source = "https://hidden-cosmos-182403.appspot.com/bunnyget"
+var source = "https://hidden-cosmos-182403.appspot.com/getleapingbunny"
 
 function callback() {
     console.log('callback')
