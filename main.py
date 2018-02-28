@@ -1,5 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # import requests
 import urllib2
+import re
 from lxml import html
 
 empty_string = "-"
@@ -29,57 +33,58 @@ def get_leaping_bunny(target_url):
     result = []
     for item in root_div:
         name = get_text_from_divs(item.xpath('div[2]/span/a'))
-        url = get_text_from_divs(item.xpath('div[3]/span/div/div[2]/div[1]/a'))
+        link = get_text_from_divs(item.xpath('div[3]/span/div/div[2]/div[1]/a'))
         img = get_attr_from_divs(item.xpath('div[1]/div/a/img'), 'data-src')
-        result.append([name, url, img])
+        result.append([name, link, img])
     return result
 
-# def get_choose_cruelty_free():
-#     target_url = 'http://www.choosecrueltyfree.org.au/cruelty-free-list/'
-#     page = requests.get(target_url)
-#     tree = html.fromstring(page.content)
-#     divs = tree.xpath('//div[@id="post-8"]/div[2]/div[*]/h4//a')
-#     return [div.text_content() for div in divs]
+#
+# Use regular expression to match img url to type. The ordering of reg exp array matters.
+# The more complicated matches first.
+#
+def decide_type_by_img_url(img_url):
+    img_url_without_space = img_url.replace('%20', '')
+    reg_exps = [['Some Vegan and NZ Made', '.*icon-somevegan.*nz.*made.*.(gif|jpg|png).*'],
+                ['Vegan and NZ Made', '.*icon-vegan.*nz.*made.*.(gif|jpg|png).*'],
+                ['Some Vegan', '.*icon-somevegan.*.(gif|jpg|png).*'],
+                ['Vegan', '.*icon-vegan.*.(gif|jpg|png).*']]
+    for reg_exp in reg_exps:
+        if re.match(reg_exp[1], img_url_without_space):
+            return reg_exp[0]
+    return 'Other'
 
-    # divs = tree.xpath('//div[@id="post-8"]/div[2]/div[67]/h4//a/span[0]/text()');
-    # divs = tree.xpath('//div[@id="post-8"]/div[2]/div[68]/h4//a')[0]
-    # print(divs.text_content())
-    # divs = tree.xpath('//div[@id="post-8"]/div[2]/div[1]/h4//a')[0]
-    # print(divs.text_content())
-    # return ""
+def page_contains_data(target_url):
+    content = str(urllib2.urlopen(target_url).read())
+    return content.find('Types of product') > 0
 
+def get_safe_shopper(target_url):
+    result = []
+    for page in range(0, 20):
+        print('------ Page is: ' + str(page))
+        url = target_url + str(page)
+        if page_contains_data(url):
+            tree = get_html_tree(url)
+            root_div = tree.xpath('//section[@id="block-system-main"]/span/div/div[2]/div[1]/div[2]/div/div/div/div[2]/div[*]')
+            for item in root_div:
+                name = get_text_from_divs(item.xpath('div[2]/div/a/h4'))
+                link = get_attr_from_divs(item.xpath('div[2]/div/a'), 'href')
+                type_img_url = get_attr_from_divs(item.xpath('div[1]/div/img'), 'src')
+                type = decide_type_by_img_url(type_img_url)
+                result.append([name, link, type])
+        else:
+            break
+    return result
 
-# divs = tree.xpath('//div[@id="post-8"]/div[2]/div[*]/h4//a/text()')
-# print(divs)
-# return divs;
-# //div[@id="post-8"]/div[2]/div[1]/h4/a
-# //div[@id="post-8"]/div[2]/div[2]/h4/span/a
-
-bunnies = get_leaping_bunny('http://www.leapingbunny.org/guide/brands')
-print("-- Leaping Bunny, ", len(bunnies) ,"brands -------------------------------------------------------------")
-# print (bunnies)
-for items in bunnies:
+items = get_safe_shopper('https://www.safe.org.nz/safeshopper-cruelty-free-nz?page=')
+print("-- Safe Shopper, ", len(items) ,"brands -------------------------------------------------------------")
+# print (items)
+for items in items:
     print(items)
 
 
-# frees = get_choose_cruelty_free()
-# print("-- Choose Cruelty Free, ", len(frees) ,"brands -------------------------------------------------------------")
-# print(frees)
-# for free in frees:
-# 	print(free.text_content())
+# bunnies = get_leaping_bunny('http://www.leapingbunny.org/guide/brands')
+# print("-- Leaping Bunny, ", len(bunnies) ,"brands -------------------------------------------------------------")
+# # print (bunnies)
+# for items in bunnies:
+#     print(items)
 
-
-# #sauce = urllib.request.urlopen(targetUrl).read()
-# #soup = bs.BeautifulSoup(sauce, 'lxml')
-# #print(soup.title)
-
-# with open("LeapingBunny.htm") as fp:
-#     soup = bs.BeautifulSoup(fp, 'lxml')
-
-# //*[@id="lb-brands"]/div[2]/div[1]/div/div[1]/div/div[2]/span/a
-# //*[@id="lb-brands"]/div[2]/div[1]/div/div[2]/div/div[2]/span/a
-# //*[@id="lb-brands"]/div[2]/div[2]/div/div[1]/div/div[2]/span/a
-
-# print(soup.title)
-
-# brands = soup.find('div', id='lb-brands')
