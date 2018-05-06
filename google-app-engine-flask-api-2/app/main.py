@@ -58,16 +58,19 @@ def decide_type_by_img_url(img_url):
             return reg_exp[0]
     return 'Other'
 
-def page_contains_data(target_url):
-    content = str(urllib2.urlopen(target_url).read())
-    return content.find('Types of product') > 0
+def page_contains_data(target_url, key):
+    try:
+        content = str(urllib2.urlopen(target_url).read())
+        return content.find(key) > 0
+    except:
+        return False
 
 def get_safe_shopper(target_url):
     result = []
     for page in range(0, 20):
         print('------ Page is: ' + str(page))
         url = target_url + str(page)
-        if page_contains_data(url):
+        if page_contains_data(url, 'Types of product'):
             tree = get_html_tree(url)
             root_div = tree.xpath('//section[@id="block-system-main"]/span/div/div[2]/div[1]/div[2]/div/div/div/div[2]/div[*]')
             for item in root_div:
@@ -82,9 +85,56 @@ def get_safe_shopper(target_url):
             break
     return result
 
+def can_use_rabbit_logo(class_str):
+    return str(class_str).find('pink') > -1
+
+def parse_type_from_name(name_str):
+    predefined_types = ['v', 'sv', 'vt', 'bp', 'CPOF']
+    types = []
+    splits = str(name_str).split()
+    for item in splits:
+        if item in predefined_types:
+            types.append(item)
+            predefined_types.remove(item)
+    return types
+
+
+def parse_type_and_name(name_str):
+    predefined_types = ['v', 'sv', 'vt', 'bp', 'CPOF']
+    types = []
+    name = name_str.strip()
+    try:
+        splits = name.split()
+        for item in splits:
+            if item in predefined_types:
+                types.append(item)
+                predefined_types.remove(item)
+                splits.remove(item)
+                name = ' '.join(splits)
+    except:
+        print('Fail to split ' + name)
+    return name, types
+
+def get_choose_cruelty_free(target_url):
+    result = []
+    tree = get_html_tree(target_url)
+    name_divs = tree.xpath('//*[@id="main"]/div/div[2]/article[*]/h2/a')
+    for name_div in name_divs:
+        name, type = parse_type_and_name(name_div.text_content())
+        class_str = name_div.get('class')
+        rabbit = can_use_rabbit_logo(class_str)
+        index = name_div.get('href')
+        index = str(index).replace('#', '')
+        link_div = tree.xpath('//*[@id="' + index + '"]/div/div[1]/*/a')
+        link = get_attr_from_divs(link_div, 'href')
+        # result.append([name, rabbit, link, type])
+        combination = name + ' (<a href="' + link + '" >' + link + '</a>), Rabbit Logo: ' + str(rabbit) + ' , type: ' + (', '.join(type))
+        result.append(combination)
+    return result
+
 
 def generate_formatted_for_weebly(brand_list):
-    brand_list_str = u'<br>'.join(brand_list).encode('utf-8').strip()
+    brand_list_str = '<br>'.join(brand_list).strip()
     asDict = {'message': brand_list_str}
     json = ujson.dumps(asDict)
     callback = request.args.get('callback')
@@ -114,6 +164,10 @@ def getSafeShopper():
     brand_list = get_safe_shopper('https://www.safe.org.nz/safeshopper-cruelty-free-nz?page=')
     return generate_formatted_for_weebly(brand_list)
 
+@app.route('/getchoosecrueltyfree')
+def getChooseCrueltyFree():
+    brand_list = get_choose_cruelty_free('https://choosecrueltyfree.org.au/lists/choose-cruelty-free-list/')
+    return generate_formatted_for_weebly(brand_list)
 
 @app.route('/listtask')
 def listTask():

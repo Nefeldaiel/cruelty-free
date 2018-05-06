@@ -54,8 +54,11 @@ def decide_type_by_img_url(img_url):
     return 'Other'
 
 def page_contains_data(target_url, key):
-    content = str(urllib2.urlopen(target_url).read())
-    return content.find(key) > 0
+    try:
+        content = str(urllib2.urlopen(target_url).read())
+        return content.find(key) > 0
+    except:
+        return False
 
 def get_safe_shopper(target_url):
     result = []
@@ -108,30 +111,42 @@ def parse_type_and_name(name_str):
 
 def get_choose_cruelty_free(target_url):
     result = []
-    for page in range(2, 3):
-        print('------ Page is: ' + str(page))
-        url = target_url + str(page)
-        if page_contains_data(url, 'Choose Cruelty Free list (a-z)'):
-            tree = get_html_tree(url)
-            name_divs = tree.xpath('//*[@id="main"]/div/div[2]/article[*]/h2/a')
-            for name_div in name_divs:
-                name, type = parse_type_and_name(name_div.text_content())
-                class_str = name_div.get('class')
-                rabbit = can_use_rabbit_logo(class_str)
-                index = name_div.get('href')
-                index = str(index).replace('#', '')
-                link_div = tree.xpath('//*[@id="' + index + '"]/div/div[1]/*/a')
-                link = get_attr_from_divs(link_div, 'href')
-                result.append([name, rabbit, link, type])
-        else:
-            break
+    # for page in range(1, 3):
+    #     print('------ Page is: ' + str(page))
+    #     url = target_url + str(page)
+    print("target_url: [" + target_url + "]")
+    url = target_url
+    # if page_contains_data(url, 'Choose Cruelty Free list (a-z)'):
+    tree = get_html_tree(url)
+    name_divs = tree.xpath('//*[@id="main"]/div/div[2]/article[*]/h2/a')
+    for name_div in name_divs:
+        name, type = parse_type_and_name(name_div.text_content())
+        class_str = name_div.get('class')
+        rabbit = can_use_rabbit_logo(class_str)
+        index = name_div.get('href')
+        index = str(index).replace('#', '')
+        link_div = tree.xpath('//*[@id="' + index + '"]/div/div[1]/*/a')
+        link = get_attr_from_divs(link_div, 'href')
+        # result.append([name, rabbit, link, type])
+        combination = name + ' (<a href="' + link + '" >' + link + '</a>), Rabbit Logo: ' + str(
+            rabbit) + ' , type: ' + (', '.join(type))
+        result.append(combination)
+    # else:
+    #     break
     return result
 
 
-items = get_choose_cruelty_free('https://choosecrueltyfree.org.au/lists/choose-cruelty-free-list/page/')
+# pdf_url = 'http://www.mediapeta.com/peta/PDF/companiesdonttest.pdf'
+# content = urllib2.urlopen(pdf_url) #.read()
+# print(content)
+
+# items = get_choose_cruelty_free('https://choosecrueltyfree.org.au/lists/choose-cruelty-free-list/page/')
+items = get_choose_cruelty_free('https://choosecrueltyfree.org.au/lists/choose-cruelty-free-list/')
 print("-- Choose Cruelty Free, ", len(items) ,"brands -------------------------------------------------------------")
-for items in items:
-    print(items)
+# for items in items:
+#     print(items)
+brand_list_str = '<br>'.join(items).strip()
+print(brand_list_str)
 
 
 # items = get_safe_shopper('https://www.safe.org.nz/safeshopper-cruelty-free-nz?page=')
