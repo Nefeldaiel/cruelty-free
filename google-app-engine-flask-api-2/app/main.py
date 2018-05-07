@@ -208,12 +208,12 @@ def hello():
 
 @app.route('/brands')
 def getBrands():
-    # leaping_bunny = get_leaping_bunny('http://www.leapingbunny.org/guide/brands', False)
-    # safe_shopper = get_safe_shopper('https://www.safe.org.nz/safeshopper-cruelty-free-nz?page=', False)
+    leaping_bunny = get_leaping_bunny('http://www.leapingbunny.org/guide/brands', False)
+    safe_shopper = get_safe_shopper('https://www.safe.org.nz/safeshopper-cruelty-free-nz?page=', False)
     choose_cruelty_free = get_choose_cruelty_free('https://choosecrueltyfree.org.au/lists/choose-cruelty-free-list/', False)
     brand_dict = {}
-    # merge_brands(brand_dict, leaping_bunny)
-    # merge_brands(brand_dict, safe_shopper)
+    merge_brands(brand_dict, leaping_bunny)
+    merge_brands(brand_dict, safe_shopper)
     merge_brands(brand_dict, choose_cruelty_free)
     return generate_formatted_from_dict_for_weebly(brand_dict)
 
